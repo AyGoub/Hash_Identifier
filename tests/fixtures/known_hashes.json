@@ -1,0 +1,13 @@
+{
+  "_note": "Verite terrain. Chaque entree : le hash, l'algorithme attendu, et le rang maximum tolere dans la liste de candidats. 1 = doit sortir en tete, 3 = doit etre dans le top 3.",
+
+  "cases": [
+    {"hash": "5d41402abc4b2a76b9719d911017c592", "expect": "MD5", "max_rank": 1},
+    {"hash": "b4b9b02e6f09a9bd760f388b67351e2b", "expect": "NTLM", "max_rank": 3},
+    {"hash": "aaf4c61ddcc5e8a2dabede0f3b482cd9aea9434d", "expect": "SHA-1", "max_rank": 1},
+    {"hash": "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824", "expect": "SHA-256", "max_rank": 1},
+    {"hash": "$2a$05$LhayLxezLhK1LhWvKxCyLOj0j1u.Kj0jZ0pEmm134uzrQlFvQJLF6", "expect": "bcrypt", "max_rank": 1},
+    {"hash": "$6$52450745$k5ka2p8bFuSmoVT1tzOyyuaREkkKBcCNqoDKzYiJL9RaE8yMnPgh2XzzF0NDrUhgrcLwg78xs1w5pJiypEdFX/", "expect": "sha512crypt", "max_rank": 1},
+    {"hash": "3f2504e0-4f89-41d3-9a0c-0305e82c3301", "expect": "UUID v4", "max_rank": 1}
+  ]
+}

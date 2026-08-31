@@ -1,0 +1,1066 @@
+{
+  "_schema": {
+    "name": "nom affiche de l'algorithme",
+    "regex": "motif teste avec re.fullmatch sur la valeur normalisee",
+    "hashcat": "numero de mode hashcat, ou null si absent",
+    "john": "nom du format John the Ripper, ou null",
+    "base_score": "precision du MOTIF seule - voir _bareme. La frequence de l'algorithme n'est PAS ici : elle vit dans POPULARITE, dans engine.py",
+    "confidence": "unique | ambigu | contexte | faux-ami",
+    "exclusive": "true = un match arrete l'evaluation des autres regles",
+    "note": "indice de desambiguisation affiche a l'utilisateur"
+  },
+
+  "_bareme": {
+    "99": "signature unique + exclusive : prefixe litteral, rien d'autre ne matche",
+    "90": "signature unique mais non exclusive : motif tres contraint sans prefixe",
+    "60": "contexte requis, ou motif large a ne pas laisser remonter trop haut",
+    "50": "hex brut : alphabet de 16 caracteres, longueur fixe",
+    "30": "alphabet large (base64, 64 caracteres) : motif peu discriminant",
+    "regle": "meme valeur pour tout un groupe. Ce qui departage deux algos de meme longueur, c'est POPULARITE dans engine.py, pas ce champ."
+  },
+
+  "_ordre": [
+    "1. crypt(3) a prefixe        -> exclusive, score 99",
+    "2. LDAP et frameworks web    -> exclusive, score 99",
+    "3. Cisco                     -> exclusive",
+    "4. Bases de donnees          -> exclusive",
+    "5. Reseau et authentification-> exclusive",
+    "6. Formes composees          -> confidence contexte",
+    "7. Faux amis                 -> confidence faux-ami",
+    "8. Digests hex bruts         -> par longueur croissante, ambigus",
+    "9. Base64                    -> ambigus",
+    "Les regles exclusive doivent rester AVANT les regles ambigues."
+  ],
+
+  "rules": [
+
+    {
+      "name": "descrypt (DES)",
+      "regex": "[./0-9A-Za-z]{13}",
+      "hashcat": "1500",
+      "john": "descrypt",
+      "base_score": 90,
+      "confidence": "unique",
+      "exclusive": false,
+      "note": "13 caracteres, pas de prefixe : le sel est les 2 premiers"
+    },
+    {
+      "name": "bsdicrypt",
+      "regex": "_[./0-9A-Za-z]{19}",
+      "hashcat": "12400",
+      "john": "bsdicrypt",
+      "base_score": 99,
+      "confidence": "unique",
+      "exclusive": true,
+      "note": "BSDi extended DES"
+    },
+    {
+      "name": "md5crypt",
+      "regex": "\\$1\\$[./0-9A-Za-z]{0,8}\\$[./0-9A-Za-z]{22}",
+      "hashcat": "500",
+      "john": "md5crypt",
+      "base_score": 99,
+      "confidence": "unique",
+      "exclusive": true,
+      "note": "Linux historique, Cisco IOS"
+    },
+    {
+      "name": "Apache apr1",
+      "regex": "\\$apr1\\$[./0-9A-Za-z]{0,8}\\$[./0-9A-Za-z]{22}",
+      "hashcat": "1600",
+      "john": "md5crypt",
+      "base_score": 99,
+      "confidence": "unique",
+      "exclusive": true,
+      "note": "fichiers .htpasswd"
+    },
+    {
+      "name": "Sun MD5",
+      "regex": "\\$md5[,$].*",
+      "hashcat": "3300",
+      "john": "sunmd5",
+      "base_score": 99,
+      "confidence": "unique",
+      "exclusive": true,
+      "note": "Solaris"
+    },
+    {
+      "name": "phpass",
+      "regex": "\\$[PH]\\$[./0-9A-Za-z]{31}",
+      "hashcat": "400",
+      "john": "phpass",
+      "base_score": 99,
+      "confidence": "unique",
+      "exclusive": true,
+      "note": "WordPress, phpBB3, Joomla"
+    },
+    {
+      "name": "bcrypt",
+      "regex": "\\$2[abxy]\\$\\d{2}\\$[./A-Za-z0-9]{53}",
+      "hashcat": "3200",
+      "john": "bcrypt",
+      "base_score": 99,
+      "confidence": "unique",
+      "exclusive": true,
+      "note": "le cout (04-31) est lisible dans le hash"
+    },
+    {
+      "name": "sha256crypt",
+      "regex": "\\$5\\$(rounds=\\d+\\$)?[./0-9A-Za-z]{0,16}\\$[./0-9A-Za-z]{43}",
+      "hashcat": "7400",
+      "john": "sha256crypt",
+      "base_score": 99,
+      "confidence": "unique",
+      "exclusive": true,
+      "note": "le segment rounds= est optionnel"
+    },
+    {
+      "name": "sha512crypt",
+      "regex": "\\$6\\$(rounds=\\d+\\$)?[./0-9A-Za-z]{0,16}\\$[./0-9A-Za-z]{86}",
+      "hashcat": "1800",
+      "john": "sha512crypt",
+      "base_score": 99,
+      "confidence": "unique",
+      "exclusive": true,
+      "note": "defaut sur la plupart des distributions Linux"
+    },
+    {
+      "name": "scrypt (crypt)",
+      "regex": "\\$7\\$[./0-9A-Za-z$]+",
+      "hashcat": "8900",
+      "john": "scrypt",
+      "base_score": 99,
+      "confidence": "unique",
+      "exclusive": true,
+      "note": ""
+    },
+    {
+      "name": "yescrypt",
+      "regex": "\\$y\\$[./0-9A-Za-z$]+",
+      "hashcat": null,
+      "john": "yescrypt",
+      "base_score": 99,
+      "confidence": "unique",
+      "exclusive": true,
+      "note": "defaut Debian 11+ et Fedora 35+ ; pas de mode hashcat natif"
+    },
+    {
+      "name": "Argon2",
+      "regex": "\\$argon2(i|d|id)\\$v=\\d+\\$m=\\d+,t=\\d+,p=\\d+\\$.+",
+      "hashcat": "34000",
+      "john": "argon2",
+      "base_score": 99,
+      "confidence": "unique",
+      "exclusive": true,
+      "note": "mode hashcat 34000 disponible a partir de hashcat 7"
+    },
+    {
+      "name": "PBKDF2 (passlib)",
+      "regex": "\\$pbkdf2-sha(1|256|512)\\$\\d+\\$.+",
+      "hashcat": "12000 / 10900 / 12100",
+      "john": "pbkdf2-hmac-sha*",
+      "base_score": 99,
+      "confidence": "unique",
+      "exclusive": true,
+      "note": "le mode depend du HMAC indique dans le prefixe"
+    },
+
+    {
+      "name": "LDAP {SHA}",
+      "regex": "\\{SHA\\}[A-Za-z0-9+/]{27}=",
+      "hashcat": "101",
+      "john": "nsldap",
+      "base_score": 99,
+      "confidence": "unique",
+      "exclusive": true,
+      "note": "SHA-1 encode en base64"
+    },
+    {
+      "name": "LDAP {SSHA}",
+      "regex": "\\{SSHA\\}[A-Za-z0-9+/]+={0,2}",
+      "hashcat": "111",
+      "john": "nsldaps",
+      "base_score": 99,
+      "confidence": "unique",
+      "exclusive": true,
+      "note": "SHA-1 sale, le sel est en fin de blob"
+    },
+    {
+      "name": "LDAP {SSHA256}",
+      "regex": "\\{SSHA256\\}[A-Za-z0-9+/]+={0,2}",
+      "hashcat": "1411",
+      "john": "ssha256",
+      "base_score": 99,
+      "confidence": "unique",
+      "exclusive": true,
+      "note": ""
+    },
+    {
+      "name": "LDAP {SSHA512}",
+      "regex": "\\{SSHA512\\}[A-Za-z0-9+/]+={0,2}",
+      "hashcat": "1711",
+      "john": "ssha512",
+      "base_score": 99,
+      "confidence": "unique",
+      "exclusive": true,
+      "note": ""
+    },
+    {
+      "name": "LDAP {MD5}",
+      "regex": "\\{MD5\\}[A-Za-z0-9+/]{22}==",
+      "hashcat": null,
+      "john": null,
+      "base_score": 99,
+      "confidence": "unique",
+      "exclusive": true,
+      "note": "decoder le base64 puis traiter comme un MD5 brut"
+    },
+    {
+      "name": "AIX {smd5}",
+      "regex": "\\{smd5\\}.+",
+      "hashcat": "6300",
+      "john": "aix-smd5",
+      "base_score": 99,
+      "confidence": "unique",
+      "exclusive": true,
+      "note": ""
+    },
+    {
+      "name": "AIX {ssha256}",
+      "regex": "\\{ssha256\\}.+",
+      "hashcat": "6400",
+      "john": "aix-ssha256",
+      "base_score": 99,
+      "confidence": "unique",
+      "exclusive": true,
+      "note": "variantes {ssha1} = 6700 et {ssha512} = 6500"
+    },
+    {
+      "name": "Django PBKDF2",
+      "regex": "pbkdf2_sha256\\$\\d+\\$[^$]+\\$[A-Za-z0-9+/]+={0,2}",
+      "hashcat": "10000",
+      "john": "django",
+      "base_score": 99,
+      "confidence": "unique",
+      "exclusive": true,
+      "note": "le nombre d'iterations est lisible en clair"
+    },
+    {
+      "name": "Django SHA-1",
+      "regex": "sha1\\$[a-zA-Z0-9]+\\$[a-fA-F0-9]{40}",
+      "hashcat": "124",
+      "john": "django",
+      "base_score": 99,
+      "confidence": "unique",
+      "exclusive": true,
+      "note": "ancien defaut de Django"
+    },
+    {
+      "name": "Blake2b-512",
+      "regex": "\\$BLAKE2\\$[a-fA-F0-9]{128}",
+      "hashcat": "600",
+      "john": "blake2",
+      "base_score": 99,
+      "confidence": "unique",
+      "exclusive": true,
+      "note": "convention de prefixe propre a hashcat"
+    },
+
+    {
+      "name": "Cisco IOS type 8",
+      "regex": "\\$8\\$[./0-9A-Za-z$]+",
+      "hashcat": "9200",
+      "john": "pbkdf2-hmac-sha256",
+      "base_score": 99,
+      "confidence": "unique",
+      "exclusive": true,
+      "note": "PBKDF2-HMAC-SHA256"
+    },
+    {
+      "name": "Cisco IOS type 9",
+      "regex": "\\$9\\$[./0-9A-Za-z$]{20,}",
+      "hashcat": "9300",
+      "john": "scrypt",
+      "base_score": 99,
+      "confidence": "unique",
+      "exclusive": true,
+      "note": "scrypt ; ne pas confondre avec Juniper $9$, bien plus court"
+    },
+    {
+      "name": "Cisco type 4",
+      "regex": "[A-Za-z0-9+/]{43}",
+      "hashcat": "5700",
+      "john": "raw-sha256",
+      "base_score": 90,
+      "confidence": "unique",
+      "exclusive": false,
+      "note": "SHA-256 en base64 sans remplissage"
+    },
+    {
+      "name": "Cisco-PIX / ASA",
+      "regex": "[A-Za-z0-9+/]{16}",
+      "hashcat": "2400",
+      "john": "pix-md5",
+      "base_score": 30,
+      "confidence": "ambigu",
+      "exclusive": false,
+      "note": "MD5 tronque ; 2410 pour la variante ASA salee"
+    },
+    {
+      "name": "Cisco type 7",
+      "regex": "\\d{2}[0-9A-Fa-f]{4,}",
+      "hashcat": null,
+      "john": null,
+      "base_score": 60,
+      "confidence": "faux-ami",
+      "exclusive": false,
+      "note": "chiffrement reversible, pas un hash : dechiffrable instantanement"
+    },
+
+    {
+      "name": "MySQL 4.1 / 5.x",
+      "regex": "\\*[A-Fa-f0-9]{40}",
+      "hashcat": "300",
+      "john": "mysql-sha1",
+      "base_score": 99,
+      "confidence": "unique",
+      "exclusive": true,
+      "note": "41 caracteres avec l'asterisque : ne pas l'oublier dans le compte"
+    },
+    {
+      "name": "PostgreSQL MD5",
+      "regex": "md5[a-f0-9]{32}",
+      "hashcat": "12",
+      "john": "postgres",
+      "base_score": 99,
+      "confidence": "unique",
+      "exclusive": true,
+      "note": "md5(mot_de_passe + nom_utilisateur)"
+    },
+    {
+      "name": "MSSQL 2000",
+      "regex": "0x0100[0-9A-Fa-f]{88}",
+      "hashcat": "131",
+      "john": "mssql",
+      "base_score": 99,
+      "confidence": "unique",
+      "exclusive": true,
+      "note": ""
+    },
+    {
+      "name": "MSSQL 2005",
+      "regex": "0x0100[0-9A-Fa-f]{48}",
+      "hashcat": "132",
+      "john": "mssql05",
+      "base_score": 99,
+      "confidence": "unique",
+      "exclusive": true,
+      "note": ""
+    },
+    {
+      "name": "MSSQL 2012+",
+      "regex": "0x0200[0-9A-Fa-f]{136}",
+      "hashcat": "1731",
+      "john": "mssql12",
+      "base_score": 99,
+      "confidence": "unique",
+      "exclusive": true,
+      "note": ""
+    },
+    {
+      "name": "Oracle 11g",
+      "regex": "S:[A-Fa-f0-9]{60}",
+      "hashcat": "112",
+      "john": "oracle11",
+      "base_score": 99,
+      "confidence": "unique",
+      "exclusive": true,
+      "note": "SHA-1 avec sel"
+    },
+    {
+      "name": "Oracle 12c",
+      "regex": "H:[A-Fa-f0-9]{32}:T:[A-Fa-f0-9]{160}",
+      "hashcat": "12300",
+      "john": "oracle12c",
+      "base_score": 99,
+      "confidence": "unique",
+      "exclusive": true,
+      "note": ""
+    },
+    {
+      "name": "Oracle 7-10g",
+      "regex": "[A-F0-9]{16}",
+      "hashcat": "3100",
+      "john": "oracle",
+      "base_score": 60,
+      "confidence": "contexte",
+      "exclusive": false,
+      "note": "MAJUSCULES uniquement ; le nom d'utilisateur est necessaire pour casser"
+    },
+
+    {
+      "name": "NetNTLMv1",
+      "regex": "[^:]+::[^:]*:[A-Fa-f0-9]{48}:[A-Fa-f0-9]{48}:[A-Fa-f0-9]{16}",
+      "hashcat": "5500",
+      "john": "netntlm",
+      "base_score": 99,
+      "confidence": "unique",
+      "exclusive": true,
+      "note": ""
+    },
+    {
+      "name": "NetNTLMv2",
+      "regex": "[^:]+::[^:]*:[A-Fa-f0-9]{16}:[A-Fa-f0-9]{32}:[A-Fa-f0-9]+",
+      "hashcat": "5600",
+      "john": "netntlmv2",
+      "base_score": 99,
+      "confidence": "unique",
+      "exclusive": true,
+      "note": "le plus courant en test d'intrusion Active Directory"
+    },
+    {
+      "name": "Kerberos TGS-REP (etype 23)",
+      "regex": "\\$krb5tgs\\$23\\$.+",
+      "hashcat": "13100",
+      "john": "krb5tgs",
+      "base_score": 99,
+      "confidence": "unique",
+      "exclusive": true,
+      "note": "kerberoasting"
+    },
+    {
+      "name": "Kerberos AS-REP (etype 23)",
+      "regex": "\\$krb5asrep\\$23\\$.+",
+      "hashcat": "18200",
+      "john": "krb5asrep",
+      "base_score": 99,
+      "confidence": "unique",
+      "exclusive": true,
+      "note": "AS-REP roasting"
+    },
+    {
+      "name": "Kerberos Pre-Auth",
+      "regex": "\\$krb5pa\\$23\\$.+",
+      "hashcat": "7500",
+      "john": "krb5pa-md5",
+      "base_score": 99,
+      "confidence": "unique",
+      "exclusive": true,
+      "note": ""
+    },
+    {
+      "name": "Kerberos AES (etype 17/18)",
+      "regex": "\\$krb5(tgs|asrep)\\$1[78]\\$.+",
+      "hashcat": "19600 / 19700",
+      "john": "krb5tgs",
+      "base_score": 99,
+      "confidence": "unique",
+      "exclusive": true,
+      "note": ""
+    },
+    {
+      "name": "WPA / WPA2",
+      "regex": "WPA\\*0[12]\\*.+",
+      "hashcat": "22000",
+      "john": "wpapsk",
+      "base_score": 99,
+      "confidence": "unique",
+      "exclusive": true,
+      "note": "format hcxtools moderne"
+    },
+    {
+      "name": "JWT",
+      "regex": "eyJ[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+",
+      "hashcat": "16500",
+      "john": "HMAC-SHA256",
+      "base_score": 99,
+      "confidence": "unique",
+      "exclusive": true,
+      "note": "3 segments ; seul le troisieme est la signature"
+    },
+    {
+      "name": "SCRAM-SHA-256",
+      "regex": "SCRAM-SHA-256\\$\\d+:.+",
+      "hashcat": null,
+      "john": null,
+      "base_score": 99,
+      "confidence": "unique",
+      "exclusive": true,
+      "note": "PostgreSQL 10+ et MongoDB"
+    },
+
+    {
+      "name": "Ligne pwdump",
+      "regex": "[^:]+:\\d+:[A-Fa-f0-9]{32}:[A-Fa-f0-9]{32}:::",
+      "hashcat": "1000 / 3000",
+      "john": "nt",
+      "base_score": 99,
+      "confidence": "unique",
+      "exclusive": true,
+      "note": "4e champ = NTLM ; aad3b435b51404ee... en 3e = LM vide"
+    },
+    {
+      "name": "Ligne /etc/shadow",
+      "regex": "[^:]+:\\$[0-9a-z]+\\$[^:]+:.*",
+      "hashcat": null,
+      "john": null,
+      "base_score": 99,
+      "confidence": "unique",
+      "exclusive": true,
+      "note": "extraire le champ 2 et le re-soumettre a l'outil"
+    },
+    {
+      "name": "vBulletin / IPB",
+      "regex": "[a-fA-F0-9]{32}:[a-zA-Z0-9./]{3,30}",
+      "hashcat": "2611 / 2811",
+      "john": "dynamic_*",
+      "base_score": 60,
+      "confidence": "contexte",
+      "exclusive": false,
+      "note": "md5(md5(mot_de_passe) + sel)"
+    },
+    {
+      "name": "Hash sale generique",
+      "regex": "[a-fA-F0-9]{32,128}:.+",
+      "hashcat": "10 / 20 / 110 ...",
+      "john": null,
+      "base_score": 60,
+      "confidence": "contexte",
+      "exclusive": false,
+      "note": "le mode depend de l'ordre pass/sel : impossible a deviner seul"
+    },
+
+    {
+      "name": "UUID v4",
+      "regex": "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}",
+      "hashcat": null,
+      "john": null,
+      "base_score": 99,
+      "confidence": "faux-ami",
+      "exclusive": true,
+      "note": "identifiant, pas une empreinte : ne pas tenter de le casser"
+    },
+    {
+      "name": "Digest OCI / Docker",
+      "regex": "sha256:[a-f0-9]{64}",
+      "hashcat": null,
+      "john": null,
+      "base_score": 99,
+      "confidence": "faux-ami",
+      "exclusive": true,
+      "note": "empreinte d'image conteneur, aucun mot de passe derriere"
+    },
+    {
+      "name": "Adresse Bitcoin",
+      "regex": "[13][a-km-zA-HJ-NP-Z1-9]{25,34}",
+      "hashcat": null,
+      "john": null,
+      "base_score": 99,
+      "confidence": "faux-ami",
+      "exclusive": true,
+      "note": "base58 : ni 0, ni O, ni I, ni l"
+    },
+
+    {
+      "name": "CRC-32",
+      "regex": "[a-fA-F0-9]{8}",
+      "hashcat": "11500",
+      "john": "crc32",
+      "base_score": 50,
+      "confidence": "ambigu",
+      "exclusive": false,
+      "note": "somme de controle, non cryptographique ; hashcat attend :00000000"
+    },
+    {
+      "name": "Adler-32",
+      "regex": "[a-fA-F0-9]{8}",
+      "hashcat": null,
+      "john": null,
+      "base_score": 50,
+      "confidence": "ambigu",
+      "exclusive": false,
+      "note": "utilise par zlib"
+    },
+    {
+      "name": "MurmurHash",
+      "regex": "[a-fA-F0-9]{8}",
+      "hashcat": "25700",
+      "john": null,
+      "base_score": 50,
+      "confidence": "ambigu",
+      "exclusive": false,
+      "note": "hachage de table, non cryptographique"
+    },
+    {
+      "name": "FNV-1a 32",
+      "regex": "[a-fA-F0-9]{8}",
+      "hashcat": null,
+      "john": null,
+      "base_score": 50,
+      "confidence": "ambigu",
+      "exclusive": false,
+      "note": ""
+    },
+
+    {
+      "name": "MySQL323",
+      "regex": "[a-fA-F0-9]{16}",
+      "hashcat": "200",
+      "john": "mysql",
+      "base_score": 50,
+      "confidence": "ambigu",
+      "exclusive": false,
+      "note": "MySQL anterieur a 4.1 : cassable instantanement"
+    },
+    {
+      "name": "CRC-64",
+      "regex": "[a-fA-F0-9]{16}",
+      "hashcat": null,
+      "john": null,
+      "base_score": 50,
+      "confidence": "ambigu",
+      "exclusive": false,
+      "note": ""
+    },
+    {
+      "name": "xxHash64",
+      "regex": "[a-fA-F0-9]{16}",
+      "hashcat": null,
+      "john": null,
+      "base_score": 50,
+      "confidence": "ambigu",
+      "exclusive": false,
+      "note": "hachage rapide non cryptographique"
+    },
+
+    {
+      "name": "MD5",
+      "regex": "[a-fA-F0-9]{32}",
+      "hashcat": "0",
+      "john": "raw-md5",
+      "base_score": 50,
+      "confidence": "ambigu",
+      "exclusive": false,
+      "note": "de loin le plus frequent parmi les 32 hex"
+    },
+    {
+      "name": "NTLM",
+      "regex": "[a-fA-F0-9]{32}",
+      "hashcat": "1000",
+      "john": "nt",
+      "base_score": 50,
+      "confidence": "ambigu",
+      "exclusive": false,
+      "note": "souvent en majuscules, souvent issu d'une ligne pwdump"
+    },
+    {
+      "name": "MD4",
+      "regex": "[a-fA-F0-9]{32}",
+      "hashcat": "900",
+      "john": "raw-md4",
+      "base_score": 50,
+      "confidence": "ambigu",
+      "exclusive": false,
+      "note": ""
+    },
+    {
+      "name": "LM",
+      "regex": "[a-fA-F0-9]{32}",
+      "hashcat": "3000",
+      "john": "lm",
+      "base_score": 50,
+      "confidence": "ambigu",
+      "exclusive": false,
+      "note": "en realite 2 moities de 16 hex ; aad3b435b51404ee... = moitie vide"
+    },
+    {
+      "name": "MD2",
+      "regex": "[a-fA-F0-9]{32}",
+      "hashcat": null,
+      "john": "md2",
+      "base_score": 50,
+      "confidence": "ambigu",
+      "exclusive": false,
+      "note": "quasi disparu"
+    },
+    {
+      "name": "RIPEMD-128",
+      "regex": "[a-fA-F0-9]{32}",
+      "hashcat": null,
+      "john": "ripemd-128",
+      "base_score": 50,
+      "confidence": "ambigu",
+      "exclusive": false,
+      "note": ""
+    },
+    {
+      "name": "HAVAL-128",
+      "regex": "[a-fA-F0-9]{32}",
+      "hashcat": null,
+      "john": "haval-128-4",
+      "base_score": 50,
+      "confidence": "ambigu",
+      "exclusive": false,
+      "note": "tres rare hors CTF"
+    },
+    {
+      "name": "Tiger-128",
+      "regex": "[a-fA-F0-9]{32}",
+      "hashcat": null,
+      "john": null,
+      "base_score": 50,
+      "confidence": "ambigu",
+      "exclusive": false,
+      "note": ""
+    },
+    {
+      "name": "Snefru-128",
+      "regex": "[a-fA-F0-9]{32}",
+      "hashcat": null,
+      "john": "snefru-128",
+      "base_score": 50,
+      "confidence": "ambigu",
+      "exclusive": false,
+      "note": ""
+    },
+
+    {
+      "name": "SHA-1",
+      "regex": "[a-fA-F0-9]{40}",
+      "hashcat": "100",
+      "john": "raw-sha1",
+      "base_score": 50,
+      "confidence": "ambigu",
+      "exclusive": false,
+      "note": "indistinguable d'un SHA de commit Git hors contexte"
+    },
+    {
+      "name": "RIPEMD-160",
+      "regex": "[a-fA-F0-9]{40}",
+      "hashcat": "6000",
+      "john": "ripemd-160",
+      "base_score": 50,
+      "confidence": "ambigu",
+      "exclusive": false,
+      "note": "utilise dans la derivation des adresses Bitcoin"
+    },
+    {
+      "name": "Tiger-160",
+      "regex": "[a-fA-F0-9]{40}",
+      "hashcat": null,
+      "john": null,
+      "base_score": 50,
+      "confidence": "ambigu",
+      "exclusive": false,
+      "note": ""
+    },
+    {
+      "name": "HAVAL-160",
+      "regex": "[a-fA-F0-9]{40}",
+      "hashcat": null,
+      "john": null,
+      "base_score": 50,
+      "confidence": "ambigu",
+      "exclusive": false,
+      "note": ""
+    },
+
+    {
+      "name": "Tiger-192",
+      "regex": "[a-fA-F0-9]{48}",
+      "hashcat": null,
+      "john": "tiger",
+      "base_score": 50,
+      "confidence": "ambigu",
+      "exclusive": false,
+      "note": "longueur peu commune : bon discriminant"
+    },
+    {
+      "name": "HAVAL-192",
+      "regex": "[a-fA-F0-9]{48}",
+      "hashcat": null,
+      "john": null,
+      "base_score": 50,
+      "confidence": "ambigu",
+      "exclusive": false,
+      "note": ""
+    },
+
+    {
+      "name": "SHA-224",
+      "regex": "[a-fA-F0-9]{56}",
+      "hashcat": "1300",
+      "john": "raw-sha224",
+      "base_score": 50,
+      "confidence": "ambigu",
+      "exclusive": false,
+      "note": ""
+    },
+    {
+      "name": "SHA3-224",
+      "regex": "[a-fA-F0-9]{56}",
+      "hashcat": "17300",
+      "john": null,
+      "base_score": 50,
+      "confidence": "ambigu",
+      "exclusive": false,
+      "note": "SHA3 et Keccak different par le remplissage"
+    },
+    {
+      "name": "Keccak-224",
+      "regex": "[a-fA-F0-9]{56}",
+      "hashcat": "17700",
+      "john": "raw-keccak",
+      "base_score": 50,
+      "confidence": "ambigu",
+      "exclusive": false,
+      "note": ""
+    },
+    {
+      "name": "HAVAL-224",
+      "regex": "[a-fA-F0-9]{56}",
+      "hashcat": null,
+      "john": null,
+      "base_score": 50,
+      "confidence": "ambigu",
+      "exclusive": false,
+      "note": ""
+    },
+
+    {
+      "name": "SHA-256",
+      "regex": "[a-fA-F0-9]{64}",
+      "hashcat": "1400",
+      "john": "raw-sha256",
+      "base_score": 50,
+      "confidence": "ambigu",
+      "exclusive": false,
+      "note": "deuxieme plus frequent apres MD5"
+    },
+    {
+      "name": "SHA3-256",
+      "regex": "[a-fA-F0-9]{64}",
+      "hashcat": "17400",
+      "john": null,
+      "base_score": 50,
+      "confidence": "ambigu",
+      "exclusive": false,
+      "note": ""
+    },
+    {
+      "name": "Keccak-256",
+      "regex": "[a-fA-F0-9]{64}",
+      "hashcat": "17800",
+      "john": "raw-keccak-256",
+      "base_score": 50,
+      "confidence": "ambigu",
+      "exclusive": false,
+      "note": "utilise par Ethereum"
+    },
+    {
+      "name": "BLAKE2s-256",
+      "regex": "[a-fA-F0-9]{64}",
+      "hashcat": null,
+      "john": null,
+      "base_score": 50,
+      "confidence": "ambigu",
+      "exclusive": false,
+      "note": ""
+    },
+    {
+      "name": "Streebog-256",
+      "regex": "[a-fA-F0-9]{64}",
+      "hashcat": "11700",
+      "john": "streebog-256",
+      "base_score": 50,
+      "confidence": "ambigu",
+      "exclusive": false,
+      "note": "GOST 2012, standard russe"
+    },
+    {
+      "name": "GOST R 34.11-94",
+      "regex": "[a-fA-F0-9]{64}",
+      "hashcat": "6900",
+      "john": "gost",
+      "base_score": 50,
+      "confidence": "ambigu",
+      "exclusive": false,
+      "note": ""
+    },
+    {
+      "name": "RIPEMD-256",
+      "regex": "[a-fA-F0-9]{64}",
+      "hashcat": null,
+      "john": null,
+      "base_score": 50,
+      "confidence": "ambigu",
+      "exclusive": false,
+      "note": ""
+    },
+    {
+      "name": "SM3",
+      "regex": "[a-fA-F0-9]{64}",
+      "hashcat": null,
+      "john": "sm3",
+      "base_score": 50,
+      "confidence": "ambigu",
+      "exclusive": false,
+      "note": "standard chinois"
+    },
+    {
+      "name": "HAVAL-256",
+      "regex": "[a-fA-F0-9]{64}",
+      "hashcat": null,
+      "john": null,
+      "base_score": 50,
+      "confidence": "ambigu",
+      "exclusive": false,
+      "note": ""
+    },
+
+    {
+      "name": "RIPEMD-320",
+      "regex": "[a-fA-F0-9]{80}",
+      "hashcat": null,
+      "john": null,
+      "base_score": 99,
+      "confidence": "unique",
+      "exclusive": true,
+      "note": "seul algorithme courant a produire 80 caracteres hex"
+    },
+
+    {
+      "name": "SHA-384",
+      "regex": "[a-fA-F0-9]{96}",
+      "hashcat": "10800",
+      "john": "raw-sha384",
+      "base_score": 50,
+      "confidence": "ambigu",
+      "exclusive": false,
+      "note": ""
+    },
+    {
+      "name": "SHA3-384",
+      "regex": "[a-fA-F0-9]{96}",
+      "hashcat": "17500",
+      "john": null,
+      "base_score": 50,
+      "confidence": "ambigu",
+      "exclusive": false,
+      "note": ""
+    },
+    {
+      "name": "Keccak-384",
+      "regex": "[a-fA-F0-9]{96}",
+      "hashcat": "17900",
+      "john": null,
+      "base_score": 50,
+      "confidence": "ambigu",
+      "exclusive": false,
+      "note": ""
+    },
+
+    {
+      "name": "SHA-512",
+      "regex": "[a-fA-F0-9]{128}",
+      "hashcat": "1700",
+      "john": "raw-sha512",
+      "base_score": 50,
+      "confidence": "ambigu",
+      "exclusive": false,
+      "note": ""
+    },
+    {
+      "name": "SHA3-512",
+      "regex": "[a-fA-F0-9]{128}",
+      "hashcat": "17600",
+      "john": null,
+      "base_score": 50,
+      "confidence": "ambigu",
+      "exclusive": false,
+      "note": ""
+    },
+    {
+      "name": "Whirlpool",
+      "regex": "[a-fA-F0-9]{128}",
+      "hashcat": "6100",
+      "john": "whirlpool",
+      "base_score": 50,
+      "confidence": "ambigu",
+      "exclusive": false,
+      "note": ""
+    },
+    {
+      "name": "BLAKE2b-512",
+      "regex": "[a-fA-F0-9]{128}",
+      "hashcat": "600",
+      "john": "blake2b",
+      "base_score": 50,
+      "confidence": "ambigu",
+      "exclusive": false,
+      "note": "hashcat prefere la forme prefixee $BLAKE2$"
+    },
+    {
+      "name": "Keccak-512",
+      "regex": "[a-fA-F0-9]{128}",
+      "hashcat": "18000",
+      "john": null,
+      "base_score": 50,
+      "confidence": "ambigu",
+      "exclusive": false,
+      "note": ""
+    },
+    {
+      "name": "Streebog-512",
+      "regex": "[a-fA-F0-9]{128}",
+      "hashcat": "11800",
+      "john": "streebog-512",
+      "base_score": 50,
+      "confidence": "ambigu",
+      "exclusive": false,
+      "note": ""
+    },
+
+    {
+      "name": "MD5 base64",
+      "regex": "[A-Za-z0-9+/]{22}==",
+      "hashcat": "0",
+      "john": "raw-md5",
+      "base_score": 30,
+      "confidence": "ambigu",
+      "exclusive": false,
+      "note": "16 octets encodes"
+    },
+    {
+      "name": "SHA-1 base64",
+      "regex": "[A-Za-z0-9+/]{27}=",
+      "hashcat": "100",
+      "john": "raw-sha1",
+      "base_score": 30,
+      "confidence": "ambigu",
+      "exclusive": false,
+      "note": "20 octets encodes"
+    },
+    {
+      "name": "SHA-256 base64",
+      "regex": "[A-Za-z0-9+/]{43}=",
+      "hashcat": "1400",
+      "john": "raw-sha256",
+      "base_score": 30,
+      "confidence": "ambigu",
+      "exclusive": false,
+      "note": "32 octets encodes"
+    },
+    {
+      "name": "SHA-512 base64",
+      "regex": "[A-Za-z0-9+/]{86}==",
+      "hashcat": "1700",
+      "john": "raw-sha512",
+      "base_score": 30,
+      "confidence": "ambigu",
+      "exclusive": false,
+      "note": "64 octets encodes"
+    }
+
+  ]
+}

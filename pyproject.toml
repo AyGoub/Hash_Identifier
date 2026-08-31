@@ -1,0 +1,24 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "hash-identifier"
+version = "0.1.0"
+description = "Identifie le type d'un hash par analyse de format"
+requires-python = ">=3.9"
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest>=7", "passlib>=1.7"]
+
+# Point d'entree CLI : apres `pip install -e .`, la commande `hashid` est
+# disponible partout, sans avoir a lancer `python -m hashid`.
+[project.scripts]
+hashid = "hashid.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/hashid"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
