@@ -105,10 +105,3 @@ Une entrée dans `src/hashid/data/rules.json`, zéro ligne de Python :
 
 Puis `pytest`. Si un test casse, la nouvelle règle est trop large.
 
-## Référence
-
-Table complète des signatures (~85 formats, motifs, modes hashcat / John, groupes d'ambiguïté) :
-<https://claude.ai/code/artifact/95045ff6-eb9c-4936-bc8b-c085843918fd>
-
-Vérifiez les numéros de mode avec `hashcat --example-hashes` et `john --list=formats` :
-la numérotation évolue d'une version à l'autre.
