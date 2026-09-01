@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hash Identifier</title>
+<style>
+  :root {
+    --bg: #0f1312; --surface: #161b19; --surface-2: #1d2422;
+    --ink: #e3e9e5; --ink-2: #919e98; --line: #28312e;
+    --accent: #53d5b2; --accent-soft: #15332b;
+    --warn: #d8a45f; --warn-soft: #33281a; --danger: #e0857a;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; background: var(--bg); color: var(--ink);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    display: flex; justify-content: center; padding: 6vh 20px;
+  }
+  .wrap { width: 100%; max-width: 720px; }
+  h1 { font-size: 1.6rem; margin: 0 0 4px; letter-spacing: -.02em; }
+  .sub { color: var(--ink-2); margin: 0 0 28px; font-size: .95rem; }
+  form { display: flex; gap: 10px; flex-wrap: wrap; }
+  input[type=text] {
+    flex: 1 1 300px; min-width: 0; padding: 12px 14px; font-size: 15px;
+    font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+    background: var(--surface); color: var(--ink);
+    border: 1px solid var(--line); border-radius: 6px;
+  }
+  input[type=text]:focus { outline: 2px solid var(--accent); border-color: var(--accent); }
+  button {
+    padding: 12px 22px; font-size: 15px; font-weight: 600; cursor: pointer;
+    background: var(--accent); color: #06231c; border: none; border-radius: 6px;
+  }
+  button:disabled { opacity: .5; cursor: default; }
+  #status { margin: 22px 0 0; color: var(--ink-2); font-size: .9rem; min-height: 1.2em; }
+  .card {
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    padding: 12px 14px; margin-top: 10px;
+    background: var(--surface); border: 1px solid var(--line); border-radius: 6px;
+  }
+  .score {
+    font-family: ui-monospace, monospace; font-weight: 700; font-size: .9rem;
+    min-width: 48px; text-align: right; color: var(--accent);
+  }
+  .name { font-weight: 600; font-size: 1.05rem; flex: 1 1 120px; }
+  .badge {
+    font-size: .72rem; text-transform: uppercase; letter-spacing: .05em;
+    padding: 3px 8px; border-radius: 4px;
+  }
+  .badge.unique { background: var(--accent-soft); color: var(--accent); }
+  .badge.ambigu { background: var(--warn-soft); color: var(--warn); }
+  .badge\.faux-ami, .badge.faux { background: #331d1a; color: var(--danger); }
+  .modes {
+    font-family: ui-monospace, monospace; font-size: .8rem; color: var(--ink-2);
+    width: 100%;
+  }
+  .note { width: 100%; font-size: .82rem; color: var(--ink-2); font-style: italic; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Hash Identifier</h1>
+  <p class="sub">Colle un hash, l'outil propose les algorithmes possibles, classés par probabilité.</p>
+
+  <form id="form">
+    <input id="hash" type="text" placeholder="5d41402abc4b2a76b9719d911017c592"
+           autocomplete="off" autofocus>
+    <button type="submit">Identifier</button>
+  </form>
+
+  <p id="status"></p>
+  <div id="results"></div>
+</div>
+
+<script>
+const form = document.getElementById("form");
+const input = document.getElementById("hash");
+const status = document.getElementById("status");
+const results = document.getElementById("results");
+
+form.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const value = input.value.trim();
+  results.innerHTML = "";
+  if (!value) { status.textContent = ""; return; }
+
+  status.textContent = "Analyse...";
+  try {
+    const resp = await fetch("/api/identify?hash=" + encodeURIComponent(value));
+    const data = await resp.json();
+    if (!resp.ok) { status.textContent = data.error || "Erreur"; return; }
+
+    if (data.count === 0) {
+      status.textContent = "Aucune correspondance.";
+      return;
+    }
+    status.textContent = data.count + " candidat(s) :";
+    for (const c of data.candidates) {
+      const card = document.createElement("div");
+      card.className = "card";
+      const conf = c.confidence === "faux-ami" ? "faux" : c.confidence;
+      card.innerHTML = `
+        <span class="score">${c.score}</span>
+        <span class="name">${escapeHtml(c.name)}</span>
+        <span class="badge ${conf}">${escapeHtml(c.confidence)}</span>
+        <span class="modes">hashcat ${c.hashcat ?? "-"} &nbsp;|&nbsp; john ${c.john ?? "-"}</span>
+        ${c.note ? `<span class="note">${escapeHtml(c.note)}</span>` : ""}
+      `;
+      results.appendChild(card);
+    }
+  } catch (err) {
+    status.textContent = "Impossible de joindre l'API.";
+  }
+});
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, (m) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+  }[m]));
+}
+</script>
+</body>
+</html>

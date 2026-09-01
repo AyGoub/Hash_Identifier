@@ -1,0 +1,9 @@
+# Deploiement Render (https://render.com) - tier gratuit.
+# Render lit ce fichier automatiquement a la creation du service.
+services:
+  - type: web
+    name: hash-identifier
+    runtime: python
+    plan: free
+    buildCommand: "pip install -e '.[web]'"
+    startCommand: "gunicorn --chdir web app:app --bind 0.0.0.0:$PORT"

@@ -1,8 +1,8 @@
-"""Tests du nettoyage de l'entree (MVP 1).
+"""Tests du nettoyage de l'entree.
 
-Contrat du MVP 1 : normalize() nettoie et renvoie un Parsed.
-Elle ne decoupe RIEN (ni sel, ni pwdump) : ces tests-la sont marques skip
-et deviendront la specification du MVP 7.
+normalize() nettoie et renvoie un Parsed. Elle ne decoupe pas les formes
+composees (hash:sel, pwdump...) : ces lignes sont reconnues comme un tout
+par les regles de rules.json, pas decoupees ici.
 """
 
 import pytest
@@ -54,50 +54,14 @@ def test_normalize_preserve_la_casse():
     assert p.value == "5D41402ABC4B2A76B9719D911017C592"
 
 
-def test_normalize_champs_non_remplis_au_mvp1():
-    p = normalize("5d41402abc4b2a76b9719d911017c592")
-    assert p.salt is None
-    assert p.username is None
-    assert p.hints == []
-
-
 def test_normalize_chaine_vide():
     """Ne doit pas lever d'exception."""
     p = normalize("")
     assert p.value == ""
 
 
-def test_normalize_ne_decoupe_pas_encore_le_sel():
-    """Comportement ASSUME du MVP 1 : le sel reste colle.
-
-    Quand tu implementeras le MVP 7, ce test devra etre supprime et
-    remplace par test_normalize_decoupe_le_sel ci-dessous.
-    """
+def test_normalize_ne_decoupe_pas_le_sel():
+    """La ligne composee est laissee intacte ; c'est une regle de
+    rules.json qui la reconnait entiere, pas normalize() qui la decoupe."""
     p = normalize("5d41402abc4b2a76b9719d911017c592:7050461")
     assert p.value == "5d41402abc4b2a76b9719d911017c592:7050461"
-    assert p.salt is None
-
-
-# ------------------------------------------------------- specification MVP 7
-
-@pytest.mark.skip(reason="decoupage des formes composees : MVP 7")
-def test_normalize_decoupe_le_sel():
-    p = normalize("5d41402abc4b2a76b9719d911017c592:7050461")
-    assert p.value == "5d41402abc4b2a76b9719d911017c592"
-    assert p.salt == "7050461"
-
-
-@pytest.mark.skip(reason="decoupage des formes composees : MVP 7")
-def test_normalize_ligne_pwdump():
-    ligne = "Admin:500:aad3b435b51404eeaad3b435b51404ee:31d6cfe0d16ae931b73c59d7e0c089c0:::"
-    p = normalize(ligne)
-    assert p.value == "31d6cfe0d16ae931b73c59d7e0c089c0"
-    assert p.username == "Admin"
-
-
-@pytest.mark.skip(reason="decoupage des formes composees : MVP 7")
-def test_normalize_ligne_shadow():
-    ligne = "root:$6$52450745$k5ka2p8bFuSmoVT1tzOyyu:19000:0:99999:7:::"
-    p = normalize(ligne)
-    assert p.value.startswith("$6$")
-    assert p.username == "root"

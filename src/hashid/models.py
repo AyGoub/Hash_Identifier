@@ -4,8 +4,8 @@ C'est la couche la plus interne : tous les autres modules peuvent l'importer,
 elle n'importe rien d'eux.
 """
 
-from dataclasses import dataclass, field
-from typing import List, Optional
+from dataclasses import dataclass
+from typing import Optional
 
 
 @dataclass(frozen=True)
@@ -39,13 +39,8 @@ class Candidate:
 
 @dataclass
 class Parsed:
-    """Sortie de normalize() : l'entree decoupee en ses composants."""
+    """Sortie de normalize() : l'entree nettoyee."""
 
     original: str
     # La partie a soumettre au moteur de regles
     value: str = ""
-    # Composants detectes pendant le decoupage (sel, utilisateur, prefixe '*'...)
-    salt: Optional[str] = None
-    username: Optional[str] = None
-    # Indices contextuels a remonter dans la sortie ("ligne pwdump", "shadow"...)
-    hints: List[str] = field(default_factory=list)

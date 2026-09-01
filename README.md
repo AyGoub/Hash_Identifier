@@ -30,6 +30,22 @@ from hashid import identify
 identify("5d41402abc4b2a76b9719d911017c592")
 ```
 
+## Interface web
+
+Une couche Flask (`web/app.py`) sert une page et une API JSON par-dessus
+`identify()` — le moteur n'est pas dupliqué.
+
+```bash
+pip install -e ".[web]"
+python web/app.py                 # http://127.0.0.1:5000
+```
+
+- `GET /` — la page
+- `GET /api/identify?hash=<h>&top=<n>` — JSON `{hash, count, candidates}`
+
+Déploiement gratuit sur [Render](https://render.com) : le dépôt contient un
+`render.yaml`, il suffit de connecter le repo (New → Blueprint).
+
 ## Structure
 
 | Chemin | Rôle | Ne fait jamais |
@@ -67,7 +83,6 @@ Si cette règle tient, ajouter une interface web plus tard = un fichier de plus 
 | 4 | Scoring et tri | 🔜 |
 | 5 | CLI utilisable | ⬜ |
 | 6 | Tests de non-régression | 🔸 |
-| 7 | Formes composées | ⬜ |
 
 Périmètre, critères de réussite et décisions de conception : [ROADMAP.md](ROADMAP.md).
 
