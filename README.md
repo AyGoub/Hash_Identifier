@@ -6,6 +6,9 @@ Aucun calcul cryptographique — uniquement de la reconnaissance de motifs.
 Le résultat est toujours une **liste classée**, jamais une réponse unique : `32` caractères
 hexadécimaux correspondent à huit algorithmes plausibles, et prétendre le contraire serait faux.
 
+**Démo en ligne :** <https://hash-identifier-9qwi.onrender.com/>
+_(hébergement gratuit : la première requête peut prendre ~30 s, le temps que le service se réveille.)_
+
 ## Installation
 
 ```bash
@@ -43,28 +46,32 @@ python web/app.py                 # http://127.0.0.1:5000
 - `GET /` — la page
 - `GET /api/identify?hash=<h>&top=<n>` — JSON `{hash, count, candidates}`
 
-Déploiement gratuit sur [Render](https://render.com) : le dépôt contient un
-`render.yaml`, il suffit de connecter le repo (New → Blueprint).
+Déployé gratuitement sur [Render](https://render.com) via le `render.yaml` du
+dépôt (New → Blueprint). Chaque `git push` redéclenche le déploiement.
 
 ## Structure
 
 | Chemin | Rôle | Ne fait jamais |
 |---|---|---|
 | `src/hashid/models.py` | Types partagés : `Rule`, `Candidate`, `Parsed` | aucune logique |
-| `src/hashid/normalize.py` | Entrée sale → entrée propre + composants détectés | ne devine aucun algorithme |
+| `src/hashid/normalize.py` | Entrée sale → entrée propre | ne devine aucun algorithme |
 | `src/hashid/charset.py` | Prédicats sur l'alphabet | ne connaît aucun nom d'algorithme |
 | `src/hashid/engine.py` | Règles → candidats → scores → tri | aucun `print()` |
 | `src/hashid/cli.py` | Arguments, E/S, affichage | aucune logique d'identification |
 | `src/hashid/data/rules.json` | Toute la connaissance métier | — |
+| `web/app.py` | API Flask : sert la page + `/api/identify` | aucune logique d'identification |
+| `web/static/index.html` | Front (terminal) qui appelle l'API | — |
 | `tests/` | Non-régression sur des hashes réels | — |
 
 **Sens des dépendances** — toujours vers l'intérieur, jamais l'inverse :
 
 ```
-cli.py → engine.py → normalize.py / charset.py → models.py
+cli.py  ┐
+web/app.py ┼→ engine.py → normalize.py / charset.py → models.py
 ```
 
-Si cette règle tient, ajouter une interface web plus tard = un fichier de plus à côté de `cli.py`, zéro modification du reste.
+Le CLI et l'API sont deux façades sur le même `engine.identify()`. Ajouter
+une interface = un fichier de plus, zéro modification du moteur.
 
 ## Ordre de détection
 
@@ -80,11 +87,11 @@ Si cette règle tient, ajouter une interface web plus tard = un fichier de plus 
 | 1 | Squelette qui répond | ✅ |
 | 2 | Règles externalisées | ✅ |
 | 3 | Formats à préfixe | ✅ |
-| 4 | Scoring et tri | 🔜 |
-| 5 | CLI utilisable | ⬜ |
-| 6 | Tests de non-régression | 🔸 |
+| 4 | Scoring et tri | ✅ |
+| 5 | CLI utilisable | ✅ |
+| 6 | Tests de non-régression | 🔸 partiel |
 
-Périmètre, critères de réussite et décisions de conception : [ROADMAP.md](ROADMAP.md).
+Bonus livré : interface web (API Flask + front terminal), déployée sur Render.
 
 ## Ajouter un algorithme
 
@@ -96,12 +103,17 @@ Une entrée dans `src/hashid/data/rules.json`, zéro ligne de Python :
   "regex": "[a-fA-F0-9]{56}",
   "hashcat": "1300",
   "john": "raw-sha224",
-  "base_score": 45,
+  "base_score": 50,
   "confidence": "ambigu",
   "exclusive": false,
   "note": ""
 }
 ```
+
+`base_score` est **uniforme par groupe de longueur** (50 pour du hex brut) : il
+mesure la précision du motif, pas la popularité. Ce qui départage deux algos de
+même longueur, c'est le dictionnaire `POPULARITE` dans `engine.py` — ajoute-y une
+ligne seulement si l'algo est notablement plus ou moins courant que la moyenne.
 
 Puis `pytest`. Si un test casse, la nouvelle règle est trop large.
 
