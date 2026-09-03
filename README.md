@@ -59,7 +59,8 @@ et la commande hashcat/john utile. L'explication est **bridée aux candidats de
 
 - Corps : `POST /api/explain` avec `{"hash": "...", "context": "..."(optionnel)}`
 - Fournisseur : [Groq](https://console.groq.com) (palier gratuit), modèle
-  `llama-3.3-70b-versatile`
+  `openai/gpt-oss-120b` (modèles disponibles :
+  `GET https://api.groq.com/openai/v1/models`)
 - L'identification reste **gratuite et instantanée** ; l'IA est isolée dans cet
   endpoint, jamais sur le chemin par défaut.
 

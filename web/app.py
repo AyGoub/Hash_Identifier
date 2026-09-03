@@ -19,7 +19,10 @@ STATIC = Path(__file__).parent / "static"
 # API Groq (gratuite, compatible OpenAI). La cle vit dans la variable
 # d'environnement GROQ_API_KEY, cote serveur uniquement — jamais dans le front.
 GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
-GROQ_MODEL = "llama-3.3-70b-versatile"
+# Modele de raisonnement : il consomme des tokens a "reflechir" (champ
+# reasoning) avant d'ecrire dans content, d'ou un max_tokens genereux.
+# Verifier les modeles dispo : GET https://api.groq.com/openai/v1/models
+GROQ_MODEL = "openai/gpt-oss-120b"
 
 app = Flask(__name__, static_folder=None)
 
@@ -108,7 +111,8 @@ def api_explain():
             json={
                 "model": GROQ_MODEL,
                 "temperature": 0.3,
-                "max_tokens": 500,
+                # large : couvre les tokens de raisonnement + la reponse
+                "max_tokens": 1200,
                 "messages": [
                     {"role": "system", "content": system},
                     {"role": "user", "content": user},
