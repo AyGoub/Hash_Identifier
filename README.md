@@ -45,9 +45,36 @@ python web/app.py                 # http://127.0.0.1:5000
 
 - `GET /` — la page
 - `GET /api/identify?hash=<h>&top=<n>` — JSON `{hash, count, candidates}`
+- `POST /api/explain` — explication pédagogique via IA (voir ci-dessous)
 
 Déployé gratuitement sur [Render](https://render.com) via le `render.yaml` du
 dépôt (New → Blueprint). Chaque `git push` redéclenche le déploiement.
+
+### Explication pédagogique (optionnelle, IA)
+
+Après l'identification, un bouton « expliquer » demande à un LLM de commenter le
+résultat en clair : ce que c'est probablement, pourquoi, l'implication sécurité,
+et la commande hashcat/john utile. L'explication est **bridée aux candidats de
+`identify()`** — le modèle ne peut pas inventer d'algorithme.
+
+- Corps : `POST /api/explain` avec `{"hash": "...", "context": "..."(optionnel)}`
+- Fournisseur : [Groq](https://console.groq.com) (palier gratuit), modèle
+  `llama-3.3-70b-versatile`
+- L'identification reste **gratuite et instantanée** ; l'IA est isolée dans cet
+  endpoint, jamais sur le chemin par défaut.
+
+**Clé API** — l'endpoint lit `os.environ["GROQ_API_KEY"]` ; sans elle il répond
+`503` et le reste de l'app fonctionne normalement. La clé ne figure jamais dans
+le code ni dans un commit.
+
+```bash
+# local (PowerShell) — le temps de la session
+$env:GROQ_API_KEY = "gsk_..."
+python web/app.py
+```
+
+Sur Render : onglet **Environment** → variable `GROQ_API_KEY` (Render l'injecte
+dans le processus au démarrage ; elle n'est pas transmise par `git push`).
 
 ## Structure
 
@@ -59,7 +86,7 @@ dépôt (New → Blueprint). Chaque `git push` redéclenche le déploiement.
 | `src/hashid/engine.py` | Règles → candidats → scores → tri | aucun `print()` |
 | `src/hashid/cli.py` | Arguments, E/S, affichage | aucune logique d'identification |
 | `src/hashid/data/rules.json` | Toute la connaissance métier | — |
-| `web/app.py` | API Flask : sert la page + `/api/identify` | aucune logique d'identification |
+| `web/app.py` | API Flask : sert la page + `/api/identify` + `/api/explain` | aucune logique d'identification |
 | `web/static/index.html` | Front (terminal) qui appelle l'API | — |
 | `tests/` | Non-régression sur des hashes réels | — |
 
@@ -91,7 +118,8 @@ une interface = un fichier de plus, zéro modification du moteur.
 | 5 | CLI utilisable | ✅ |
 | 6 | Tests de non-régression | 🔸 partiel |
 
-Bonus livré : interface web (API Flask + front terminal), déployée sur Render.
+Bonus livré : interface web (API Flask + front terminal) déployée sur Render, et
+explication pédagogique optionnelle via IA (Groq).
 
 ## Ajouter un algorithme
 

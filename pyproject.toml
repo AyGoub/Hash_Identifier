@@ -12,7 +12,8 @@ dependencies = []
 [project.optional-dependencies]
 dev = ["pytest>=7", "passlib>=1.7"]
 # Couche web : API Flask qui expose identify(). gunicorn sert en production.
-web = ["flask>=3", "gunicorn>=21"]
+# requests : appel à l'API Groq (gratuite) pour l'explication pédagogique.
+web = ["flask>=3", "gunicorn>=21", "requests>=2"]
 
 # Point d'entree CLI : apres `pip install -e .`, la commande `hashid` est
 # disponible partout, sans avoir a lancer `python -m hashid`.
